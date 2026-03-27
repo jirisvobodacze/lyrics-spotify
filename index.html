@@ -8,14 +8,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inconsolata:wght@300;400;500&family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
-  --ink:       #0e0c0a;
-  --paper:     #f5f0e8;
-  --paper2:    #ede8df;
-  --sepia:     #8b7355;
-  --rust:      #c0392b;
-  --gold:      #b8860b;
-  --muted:     #a09880;
-  --border:    #d4cfc5;
+  --ink:       #f0ede8;
+  --paper:     #111113;
+  --paper2:    #1a1a1e;
+  --sepia:     #a0916e;
+  --rust:      #e05a4a;
+  --gold:      #c9a84c;
+  --muted:     #5a5868;
+  --border:    #2a2830;
   --green:     #1db954;
   --r: 12px;
 }
@@ -30,13 +30,12 @@ html, body {
   overflow: hidden;
 }
 
-/* Paper texture overlay */
+/* Subtle dark grain overlay */
 body::after {
   content: '';
   position: fixed; inset: 0;
   background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(139,115,85,.04) 28px),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 9998;
 }
@@ -63,7 +62,7 @@ body::after {
   font-size: 22vw;
   font-weight: 700;
   font-style: italic;
-  color: rgba(139,115,85,.06);
+  color: rgba(160,145,110,.05);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -76,11 +75,11 @@ body::after {
 .login-card {
   position: relative; z-index: 1;
   width: min(460px, 92vw);
-  background: var(--paper);
+  background: var(--paper2);
   border: 1px solid var(--border);
   border-radius: 2px;
   padding: 52px 48px;
-  box-shadow: 4px 4px 0 var(--border), 8px 8px 0 rgba(139,115,85,.08);
+  box-shadow: 4px 4px 0 var(--border), 8px 8px 0 rgba(0,0,0,.3);
 }
 
 .login-eyebrow {
@@ -127,7 +126,7 @@ body::after {
 }
 .field-input {
   width: 100%;
-  background: var(--paper2);
+  background: var(--paper);
   border: 1px solid var(--border);
   border-bottom: 2px solid var(--sepia);
   color: var(--ink);
@@ -139,8 +138,8 @@ body::after {
   transition: border-color .2s, box-shadow .2s;
 }
 .field-input:focus {
-  border-color: var(--ink);
-  box-shadow: 0 2px 0 var(--ink);
+  border-color: var(--sepia);
+  box-shadow: 0 2px 0 var(--sepia);
 }
 .field-hint {
   font-size: .78rem;
@@ -153,10 +152,10 @@ body::after {
 .field-hint code {
   font-family: 'Inconsolata', monospace;
   font-size: .75rem;
-  background: var(--paper2);
+  background: var(--paper);
   padding: 1px 5px;
   border-radius: 2px;
-  color: var(--rust);
+  color: var(--gold);
   word-break: break-all;
 }
 
@@ -164,8 +163,8 @@ body::after {
   width: 100%;
   margin-top: 28px;
   padding: 14px 20px;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--green);
+  color: #000;
   font-family: 'Inconsolata', monospace;
   font-size: .8rem;
   letter-spacing: .15em;
@@ -174,14 +173,14 @@ body::after {
   border-radius: 2px;
   cursor: pointer;
   transition: background .2s, transform .1s, box-shadow .2s;
-  box-shadow: 3px 3px 0 var(--sepia);
+  box-shadow: 3px 3px 0 rgba(29,185,84,.3);
 }
 .btn-primary:hover {
-  background: var(--sepia);
-  box-shadow: 5px 5px 0 rgba(139,115,85,.4);
+  background: #22e361;
+  box-shadow: 5px 5px 0 rgba(29,185,84,.2);
   transform: translate(-1px, -1px);
 }
-.btn-primary:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--sepia); }
+.btn-primary:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(29,185,84,.3); }
 
 /* ─── LOADING ──────────────────────────────── */
 #loading-screen { flex-direction: column; gap: 20px; }
@@ -290,7 +289,7 @@ body::after {
   background: var(--paper2);
   display: flex; align-items: center; justify-content: center;
 }
-.art-placeholder svg { opacity: .15; }
+.art-placeholder svg { opacity: .2; }
 
 /* Track info */
 #track-name {
@@ -348,7 +347,7 @@ body::after {
 }
 .progress-fill {
   height: 100%;
-  background: var(--ink);
+  background: var(--green);
   border-radius: 1px;
   transition: width .5s linear;
 }
@@ -379,15 +378,16 @@ body::after {
   display: flex; align-items: center; justify-content: center;
 }
 .ctrl:hover { color: var(--ink); background: var(--paper2); }
-.ctrl.active { color: var(--rust); }
+.ctrl.active { color: var(--green); }
 .ctrl.main {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--paper2);
+  color: var(--ink);
   width: 44px; height: 44px;
   border-radius: 2px;
-  box-shadow: 2px 2px 0 var(--sepia);
+  border: 1px solid var(--border);
+  box-shadow: none;
 }
-.ctrl.main:hover { background: var(--sepia); box-shadow: 3px 3px 0 rgba(139,115,85,.4); }
+.ctrl.main:hover { background: var(--border); box-shadow: none; }
 
 /* Volume row */
 .vol-row {
@@ -403,7 +403,7 @@ input[type=range].vol {
   background: var(--border);
   border-radius: 1px;
   cursor: pointer;
-  accent-color: var(--ink);
+  accent-color: var(--green);
 }
 input[type=range].vol::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -489,17 +489,18 @@ input[type=range].vol::-webkit-slider-thumb {
 }
 .lyric-line.blank { height: 18px; margin-bottom: 0; }
 .lyric-line.past {
-  color: var(--paper2);
+  color: #2e2c38;
   transform: translateX(-6px);
 }
 .lyric-line.active {
-  color: var(--ink);
+  color: #ffffff;
   font-size: 2.7rem;
   font-weight: 400;
   transform: translateX(10px);
+  text-shadow: 0 0 40px rgba(255,255,255,.08);
 }
 .lyric-line.near {
-  color: var(--sepia);
+  color: #7a7080;
   font-size: 2.3rem;
 }
 
@@ -532,7 +533,7 @@ input[type=range].vol::-webkit-slider-thumb {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--paper);
+  background: var(--paper2);
 }
 
 .queue-header {
@@ -699,10 +700,10 @@ input[type=range].vol::-webkit-slider-thumb {
           <img id="album-img" src="" alt="" style="display:none">
           <div id="art-placeholder" class="art-placeholder">
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="22" stroke="#8b7355" stroke-width="1.5"/>
-              <circle cx="24" cy="24" r="14" stroke="#8b7355" stroke-width="1"/>
-              <circle cx="24" cy="24" r="6" stroke="#8b7355" stroke-width="1"/>
-              <circle cx="24" cy="24" r="2" fill="#8b7355"/>
+              <circle cx="24" cy="24" r="22" stroke="#a0916e" stroke-width="1.5"/>
+              <circle cx="24" cy="24" r="14" stroke="#a0916e" stroke-width="1"/>
+              <circle cx="24" cy="24" r="6" stroke="#a0916e" stroke-width="1"/>
+              <circle cx="24" cy="24" r="2" fill="#a0916e"/>
             </svg>
           </div>
         </div>
@@ -960,8 +961,11 @@ function getActiveIdx(lines, pos, dur) {
   const nonBlank = lines.filter(l => l !== '');
   if (!nonBlank.length) return -1;
   const frac = pos / dur;
-  // bias slightly early so it feels "ahead" rather than "behind"
-  const target = Math.floor(frac * nonBlank.length * 0.92);
+  // No conservative bias — map directly, lyrics.ovh often starts after intro
+  // so we subtract ~5% of non-blank lines to skip intro silence
+  const introSkip = Math.floor(nonBlank.length * 0.05);
+  const adjusted = Math.max(0, frac * nonBlank.length - introSkip);
+  const target = Math.floor(adjusted);
   let count = 0;
   for (let i = 0; i < lines.length; i++) {
     if (lines[i] !== '') {
@@ -1153,13 +1157,13 @@ function startTick() {
   if (tickId) clearInterval(tickId);
   tickId = setInterval(() => {
     if (!playing) return;
-    posMs = Math.min(posMs + 500, durMs);
+    posMs = Math.min(posMs + 250, durMs);
     updateProgress();
     if (lyrics) {
       const ai = getActiveIdx(lyrics, posMs, durMs);
       renderLyrics(lyrics, ai);
     }
-  }, 500);
+  }, 250);
 }
 
 /* ═══════════════════════════════════════════
