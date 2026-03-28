@@ -491,18 +491,9 @@ async function spPost(path) {
 }
 
 /* ══════════════════════════════════════
-   AUDIO FEATURES (BPM + key)
+   AUDIO FEATURES — removed (Spotify 403 for non-extended apps)
+   BPM badge hidden, key removed
 ══════════════════════════════════════ */
-const KEY_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
-const MODE_NAMES = ['min','maj'];
-async function fetchAudioFeatures(trackId) {
-  try {
-    const d=await spGet('/audio-features/'+trackId);
-    if(!d) return null;
-    const key=d.key>=0?KEY_NAMES[d.key]+''+MODE_NAMES[d.mode||0]:'?';
-    return { bpm: Math.round(d.tempo), key };
-  } catch { return null; }
-}
 
 /* ══════════════════════════════════════
    LRCLIB — SYNCED LYRICS
@@ -586,7 +577,7 @@ concerts: up to 5 confirmed European dates 2025-2026, empty array if unknown, ne
 ${langNote}`;
   try {
     const res=await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {method:'POST',headers:{'Content-Type':'application/json'},
        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:800}})}
     );
@@ -598,7 +589,7 @@ ${langNote}`;
         const delay=wait?Math.ceil(parseFloat(wait[1]))*1000:20000;
         await new Promise(r=>setTimeout(r,delay));
         const r2=await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {method:'POST',headers:{'Content-Type':'application/json'},
            body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.7,maxOutputTokens:800}})}
         );
@@ -815,18 +806,11 @@ async function poll() {
     document.getElementById('ti-artist').textContent=currentArtist;
     document.getElementById('ti-album').textContent=currentAlbum;
 
-    // Chips (year, popularity, explicit) — BPM added async below
+    // Chips (year, popularity, explicit)
     renderChips(currentYear,track.popularity,track.explicit,null,null);
     document.getElementById('bpm-badge').style.display='none';
 
-    // Audio features (BPM + key) async
-    fetchAudioFeatures(track.id).then(af=>{
-      if(!af) return;
-      renderChips(currentYear,track.popularity,track.explicit,af.bpm,af.key);
-      const badge=document.getElementById('bpm-badge');
-      badge.textContent=`${af.bpm} BPM · ${af.key}`;
-      badge.style.display='';
-    });
+    // Audio features removed — Spotify 403 for non-extended apps
 
     // Lyrics
     const badge=document.getElementById('src-badge');
