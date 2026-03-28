@@ -592,68 +592,73 @@ function promptGeminiKey() {
   }
 }
 
-// Fetch AI song insight via Gemini Flash (free tier)
+// Fetch AI song insight via Gemini (free tier)
+// Tries models in order until one works
+const GEMINI_MODELS = [
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash-8b',
+  'gemini-1.5-flash',
+];
+
+async function geminiRequest(apiKey, model, prompt) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 800 }
+      })
+    }
+  );
+  return res.json();
+}
+
 async function fetchSongInsight(artist, title, album, year) {
   const apiKey = getGeminiKey();
   if (!apiKey) return null;
 
-  const prompt = `You are a music expert writing for passionate music lovers. For the song "${title}" by ${artist}${album ? ` (album: ${album}, ${year})` : ''}, provide a rich JSON response with these exact fields:
+  const prompt = `You are a music expert writing for passionate music lovers. For the song "${title}" by ${artist}${album ? ` (album: ${album}, ${year})` : ''}, respond with ONLY a valid JSON object — no markdown, no backticks, no extra text:
 
-{
-  "why_written": "2-3 sentences about the story/inspiration/context behind this song. Be specific and factual.",
-  "meaning": "2-3 sentences about what the lyrics mean thematically — emotions, metaphors, narrative.",
-  "mood": "one evocative sentence capturing the sonic and emotional atmosphere.",
-  "fun_fact": "one surprising, specific fact a fan might not know.",
-  "genres": ["array", "of", "3-5", "genre/style", "tags"],
-  "similar_artists": ["3", "similar", "artists"],
-  "concerts": [
-    { "date": "YYYY-MM-DD", "venue": "Venue Name", "city": "City, Country" }
-  ]
-}
+{"why_written":"2-3 sentences: story/inspiration behind this song, be specific","meaning":"2-3 sentences: what the lyrics mean thematically","mood":"one sentence: sonic and emotional atmosphere","fun_fact":"one surprising fact a fan might not know","genres":["3-5 genre tags"],"similar_artists":["3 similar artists"],"concerts":[{"date":"YYYY-MM-DD","venue":"Venue","city":"City, Country"}]}
 
-For "concerts": list up to 6 known or announced upcoming European tour dates for ${artist} in 2025 or 2026. If none are known, return an empty array. Use only confirmed information — do not invent dates.
+For concerts: up to 5 confirmed upcoming European dates for ${artist} in 2025-2026. Empty array if unknown. Never invent dates.`;
 
-Respond ONLY with valid JSON. No markdown, no backticks, no preamble.`;
+  for (const model of GEMINI_MODELS) {
+    try {
+      const data = await geminiRequest(apiKey, model, prompt);
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 700 }
-        })
+      if (data.error) {
+        const code = data.error.code;
+        const msg  = data.error.message || '';
+        if (code === 404) { continue; } // model not available, try next
+        if (code === 429) {
+          const wait = msg.match(/retry in ([\d.]+)s/i);
+          const delay = wait ? Math.ceil(parseFloat(wait[1])) * 1000 : 20000;
+          console.warn(`Gemini 429 on ${model}, waiting ${delay/1000}s…`);
+          await new Promise(r => setTimeout(r, delay));
+          // retry same model once
+          const data2 = await geminiRequest(apiKey, model, prompt);
+          if (data2.error) { continue; }
+          const t2 = data2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          return JSON.parse(t2.replace(/```json|```/g, '').trim());
+        }
+        console.warn(`Gemini ${model} error ${code}:`, msg);
+        continue;
       }
-    );
-    const data = await res.json();
-    if (data.error) {
-      const msg = data.error.message || '';
-      if (data.error.code === 429) {
-        // Extract retry delay from message if available
-        const match = msg.match(/retry in ([\d.]+)s/i);
-        const delay = match ? Math.ceil(parseFloat(match[1])) * 1000 : 15000;
-        console.warn(`Gemini rate limit — retrying in ${delay/1000}s`);
-        await new Promise(r => setTimeout(r, delay));
-        // One retry
-        const res2 = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 700 } }) }
-        );
-        const data2 = await res2.json();
-        if (data2.error) { console.warn('Gemini retry failed:', data2.error.message); return null; }
-        const text2 = data2.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        return JSON.parse(text2.replace(/```json|```/g, '').trim());
-      }
-      console.warn('Gemini error:', msg);
-      return null;
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!text) continue;
+      return JSON.parse(text.replace(/```json|```/g, '').trim());
+
+    } catch (e) {
+      console.warn(`Gemini ${model} failed:`, e);
+      // try next model
     }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const clean = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
-  } catch (e) { console.warn('Gemini fetch failed:', e); return null; }
+  }
+  return null; // all models failed
 }
 
 // Concerts via external API are blocked by CORS — Gemini handles everything
