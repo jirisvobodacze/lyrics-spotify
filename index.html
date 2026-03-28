@@ -245,13 +245,21 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
   <div class="login-card">
     <div class="login-logo">Ver<span>še</span></div>
     <div class="login-sub">Texty písniček v reálném čase · Spotify</div>
-    <div style="margin-bottom:20px">
+    <div style="margin-bottom:16px">
       <label class="field-label" for="cid">Spotify Client ID</label>
       <input id="cid" class="field-input" type="text" placeholder="a1b2c3d4e5f6…" autocomplete="off" spellcheck="false">
       <p class="field-hint">
         Zdarma na <a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a>
         → Create app → Redirect URI:<br>
         <code id="redir-display">načítám…</code>
+      </p>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="field-label" for="gkey">Gemini API klíč <span style="color:var(--green);font-size:.7em">(volitelné — pro info o písničkách)</span></label>
+      <input id="gkey" class="field-input" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
+      <p class="field-hint">
+        Zdarma na <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+        → Get API key. Žádná platební karta. Uloží se pouze v tvém prohlížeči.
       </p>
     </div>
     <button class="btn-login" onclick="doLogin()">Přihlásit se přes Spotify</button>
@@ -319,6 +327,7 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
       <div class="bottom-row">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
         <input type="range" class="vol" id="vol-sl" min="0" max="100" value="80" oninput="doVol(this.value)">
+        <button class="btn-logout" id="btn-gkey" onclick="promptGeminiKey()" title="Nastavit Gemini API klíč">AI</button>
         <button class="btn-logout" onclick="doLogout()">Odhlásit</button>
       </div>
     </div>
@@ -387,6 +396,9 @@ async function doLogin() {
   const cid = document.getElementById('cid').value.trim();
   if (!cid) { toast('Zadejte Client ID', true); return; }
   localStorage.setItem('sp_cid', cid);
+  // Save Gemini key if provided
+  const gkey = document.getElementById('gkey')?.value.trim();
+  if (gkey) saveGeminiKey(gkey);
   const ver = randStr(64); localStorage.setItem('sp_ver', ver);
   const ch = await pkce(ver);
   location.href = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({
@@ -550,8 +562,41 @@ function clearInfoPanel() {
   document.getElementById('info-panel').innerHTML = '';
 }
 
-// Fetch AI song insight via Claude API (embedded in artifact)
+// Gemini API key management
+function getGeminiKey() { return localStorage.getItem('gemini_key') || ''; }
+function saveGeminiKey(k) {
+  if (k) localStorage.setItem('gemini_key', k);
+  else localStorage.removeItem('gemini_key');
+  updateGeminiKeyIndicator();
+}
+function updateGeminiKeyIndicator() {
+  const btn = document.getElementById('btn-gkey');
+  if (!btn) return;
+  const hasKey = !!getGeminiKey();
+  btn.textContent = hasKey ? 'AI ✓' : 'AI';
+  btn.style.color = hasKey ? 'var(--green)' : '';
+  btn.style.borderColor = hasKey ? 'var(--green)' : '';
+}
+function promptGeminiKey() {
+  const current = getGeminiKey();
+  const key = window.prompt('Gemini API klíč (získej zdarma na aistudio.google.com):\nNechej prázdné pro smazání.', current || '');
+  if (key === null) return; // cancelled
+  saveGeminiKey(key.trim());
+  if (key.trim()) {
+    toast('Gemini klíč uložen ✓');
+    // Re-load info panel for current track
+    if (infoTrackId) { infoTrackId = null; }
+  } else {
+    toast('Gemini klíč smazán');
+    clearInfoPanel();
+  }
+}
+
+// Fetch AI song insight via Gemini Flash (free tier)
 async function fetchSongInsight(artist, title, album, year) {
+  const apiKey = getGeminiKey();
+  if (!apiKey) return null;
+
   const prompt = `You are a music expert writing for passionate music lovers. For the song "${title}" by ${artist}${album ? ` (album: ${album}, ${year})` : ''}, provide a rich JSON response with these exact fields:
 
 {
@@ -566,20 +611,23 @@ async function fetchSongInsight(artist, title, album, year) {
 Respond ONLY with valid JSON. No markdown, no backticks, no preamble.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 600,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 700 }
+        })
+      }
+    );
     const data = await res.json();
-    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    if (data.error) { console.warn('Gemini error:', data.error.message); return null; }
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const clean = text.replace(/```json|```/g, '').trim();
     return JSON.parse(clean);
-  } catch { return null; }
+  } catch (e) { console.warn('Gemini fetch failed:', e); return null; }
 }
 
 // Fetch upcoming European concerts via Bandsintown public API
@@ -980,6 +1028,12 @@ function toast(msg, err=false) {
 async function init() {
   const saved = localStorage.getItem('sp_cid');
   if (saved) document.getElementById('cid').value = saved;
+  // Prefill Gemini key if saved
+  const savedGkey = getGeminiKey();
+  if (savedGkey) {
+    const el = document.getElementById('gkey');
+    if (el) el.value = savedGkey;
+  }
 
   const p = new URLSearchParams(location.search);
   const code = p.get('code'), error = p.get('error');
@@ -996,6 +1050,7 @@ async function init() {
 
   showScreen('loading-screen'); setStatus('Načítám přehrávač…');
   showScreen('player-screen');
+  updateGeminiKeyIndicator();
 
   await poll();
   startTick();
