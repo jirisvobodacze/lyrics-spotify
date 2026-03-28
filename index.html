@@ -623,43 +623,89 @@ Respond ONLY with valid JSON. No markdown, no backticks, no preamble.`;
       }
     );
     const data = await res.json();
-    if (data.error) { console.warn('Gemini error:', data.error.message); return null; }
+    if (data.error) {
+      const msg = data.error.message || '';
+      if (data.error.code === 429) {
+        // Extract retry delay from message if available
+        const match = msg.match(/retry in ([\d.]+)s/i);
+        const delay = match ? Math.ceil(parseFloat(match[1])) * 1000 : 15000;
+        console.warn(`Gemini rate limit — retrying in ${delay/1000}s`);
+        await new Promise(r => setTimeout(r, delay));
+        // One retry
+        const res2 = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 700 } }) }
+        );
+        const data2 = await res2.json();
+        if (data2.error) { console.warn('Gemini retry failed:', data2.error.message); return null; }
+        const text2 = data2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return JSON.parse(text2.replace(/```json|```/g, '').trim());
+      }
+      console.warn('Gemini error:', msg);
+      return null;
+    }
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const clean = text.replace(/```json|```/g, '').trim();
     return JSON.parse(clean);
   } catch (e) { console.warn('Gemini fetch failed:', e); return null; }
 }
 
-// Fetch upcoming European concerts via Bandsintown public API
+// Fetch upcoming European concerts via Songkick (CORS-friendly public search)
 async function fetchConcerts(artist) {
+  const euCountries = new Set([
+    'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
+    'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','GB','CH','NO',
+    'IS','AL','BA','ME','MK','RS','UA','TR','MD','GE'
+  ]);
+  const now = Date.now();
+
+  // Try Songkick via allorigins CORS proxy
   try {
-    const encoded = encodeURIComponent(artist);
-    // Bandsintown v3 public endpoint (app_id is required but any string works for public data)
-    const r = await fetch(
-      `https://rest.bandsintown.com/artists/${encoded}/events?app_id=verse-app&date=2025-01-01%2C2026-12-31`,
-      { headers: { Accept: 'application/json' } }
-    );
-    if (!r.ok) return [];
-    const events = await r.json();
-    if (!Array.isArray(events)) return [];
+    const q = encodeURIComponent(artist);
+    const url = `https://api.songkick.com/api/3.0/search/artists.json?query=${q}&apikey=U9MJbGtHnBplmkqr`;
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const r1 = await fetch(proxy);
+    const d1 = await r1.json();
+    const body1 = JSON.parse(d1.contents);
+    const skArtistId = body1?.resultsPage?.results?.artist?.[0]?.id;
+    if (!skArtistId) return [];
 
-    // Filter Europe, sort by date, take next 6
-    const euCountries = new Set([
-      'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
-      'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','GB','CH','NO',
-      'IS','AL','BA','ME','MK','RS','UA','TR','BY','MD','GE','AM','AZ'
-    ]);
+    const url2 = `https://api.songkick.com/api/3.0/artists/${skArtistId}/calendar.json?apikey=U9MJbGtHnBplmkqr&per_page=20`;
+    const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url2)}`;
+    const r2 = await fetch(proxy2);
+    const d2 = await r2.json();
+    const body2 = JSON.parse(d2.contents);
+    const events = body2?.resultsPage?.results?.event || [];
 
-    const now = Date.now();
     return events
       .filter(e => {
-        const cc = e.venue?.country_code?.toUpperCase() || '';
-        const dt = new Date(e.datetime).getTime();
-        return euCountries.has(cc) && dt > now;
+        const cc = e.venue?.metroArea?.country?.displayName || '';
+        // Map country name to code for European filter
+        const dt = new Date(e.start?.date).getTime();
+        return dt > now && isEuropeanCountryName(cc);
       })
-      .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))
-      .slice(0, 6);
-  } catch { return []; }
+      .sort((a, b) => new Date(a.start?.date) - new Date(b.start?.date))
+      .slice(0, 6)
+      .map(e => ({
+        date: e.start?.date || '',
+        venue: e.venue?.displayName || e.displayName,
+        city: [e.venue?.metroArea?.displayName, e.venue?.metroArea?.country?.displayName].filter(Boolean).join(', '),
+        uri: e.uri || ''
+      }));
+  } catch (e) {
+    console.warn('Concerts fetch failed:', e);
+    return [];
+  }
+}
+
+function isEuropeanCountryName(name) {
+  const EU_NAMES = ['Germany','France','United Kingdom','Spain','Italy','Netherlands',
+    'Belgium','Sweden','Norway','Denmark','Finland','Poland','Czech Republic','Austria',
+    'Switzerland','Portugal','Greece','Hungary','Romania','Bulgaria','Croatia','Serbia',
+    'Slovakia','Slovenia','Estonia','Latvia','Lithuania','Ireland','Iceland','Ukraine',
+    'Turkey','Albania','Bosnia','Montenegro','North Macedonia','Moldova','Georgia'];
+  return EU_NAMES.some(n => name?.includes(n));
 }
 
 function renderInfoPanel(insight, concerts) {
@@ -722,13 +768,12 @@ function renderInfoPanel(insight, concerts) {
 
   if (concerts?.length) {
     concerts.forEach(e => {
-      const dt = new Date(e.datetime);
-      const dateStr = dt.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' });
-      const city = [e.venue?.city, e.venue?.country].filter(Boolean).join(', ');
+      const dt = new Date(e.date);
+      const dateStr = isNaN(dt) ? e.date : dt.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'short', year: 'numeric' });
       html += `<div class="concert-item">
         <div class="concert-date">${esc(dateStr)}</div>
-        <div class="concert-venue">${esc(e.venue?.name || '—')}</div>
-        <div class="concert-city">${esc(city)}</div>
+        <div class="concert-venue">${esc(e.venue || '—')}</div>
+        <div class="concert-city">${esc(e.city || '')}</div>
       </div>`;
     });
   } else {
