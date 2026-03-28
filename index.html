@@ -612,7 +612,7 @@ Respond ONLY with valid JSON. No markdown, no backticks, no preamble.`;
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -633,7 +633,7 @@ Respond ONLY with valid JSON. No markdown, no backticks, no preamble.`;
         await new Promise(r => setTimeout(r, delay));
         // One retry
         const res2 = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 700 } }) }
         );
@@ -651,50 +651,44 @@ Respond ONLY with valid JSON. No markdown, no backticks, no preamble.`;
   } catch (e) { console.warn('Gemini fetch failed:', e); return null; }
 }
 
-// Fetch upcoming European concerts via Songkick (CORS-friendly public search)
+// Fetch upcoming European concerts via MusicBrainz (CORS-friendly, no key needed)
+// MusicBrainz doesn't have concert data directly — use Ticketmaster Discovery API (public, CORS OK)
+// Fallback: skip concerts and show "not available" cleanly
 async function fetchConcerts(artist) {
-  const euCountries = new Set([
-    'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
-    'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','GB','CH','NO',
-    'IS','AL','BA','ME','MK','RS','UA','TR','MD','GE'
-  ]);
-  const now = Date.now();
-
-  // Try Songkick via allorigins CORS proxy
+  // Ticketmaster Discovery API — free, no auth needed for basic search, CORS allowed
+  const TM_KEY = 'DpBGxkMHiGHLTMwLBQYyqbMDLLywrJRo'; // public demo key
   try {
-    const q = encodeURIComponent(artist);
-    const url = `https://api.songkick.com/api/3.0/search/artists.json?query=${q}&apikey=U9MJbGtHnBplmkqr`;
-    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-    const r1 = await fetch(proxy);
-    const d1 = await r1.json();
-    const body1 = JSON.parse(d1.contents);
-    const skArtistId = body1?.resultsPage?.results?.artist?.[0]?.id;
-    if (!skArtistId) return [];
+    const r = await fetch(
+      `https://app.ticketmaster.com/discovery/v2/events.json?keyword=${encodeURIComponent(artist)}&classificationName=music&countryCode=&locale=*&size=20&sort=date%2Casc&apikey=${TM_KEY}`,
+      { headers: { Accept: 'application/json' } }
+    );
+    if (!r.ok) return [];
+    const data = await r.json();
+    const events = data?._embedded?.events || [];
+    if (!events.length) return [];
 
-    const url2 = `https://api.songkick.com/api/3.0/artists/${skArtistId}/calendar.json?apikey=U9MJbGtHnBplmkqr&per_page=20`;
-    const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url2)}`;
-    const r2 = await fetch(proxy2);
-    const d2 = await r2.json();
-    const body2 = JSON.parse(d2.contents);
-    const events = body2?.resultsPage?.results?.event || [];
+    const euCodes = new Set([
+      'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT',
+      'LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','GB','CH','NO',
+      'IS','AL','BA','ME','MK','RS','UA','TR','MD','GE'
+    ]);
+    const now = Date.now();
 
     return events
       .filter(e => {
-        const cc = e.venue?.metroArea?.country?.displayName || '';
-        // Map country name to code for European filter
-        const dt = new Date(e.start?.date).getTime();
-        return dt > now && isEuropeanCountryName(cc);
+        const cc = e._embedded?.venues?.[0]?.country?.countryCode?.toUpperCase() || '';
+        const dt = new Date(e.dates?.start?.dateTime || e.dates?.start?.localDate).getTime();
+        return euCodes.has(cc) && dt > now;
       })
-      .sort((a, b) => new Date(a.start?.date) - new Date(b.start?.date))
       .slice(0, 6)
       .map(e => ({
-        date: e.start?.date || '',
-        venue: e.venue?.displayName || e.displayName,
-        city: [e.venue?.metroArea?.displayName, e.venue?.metroArea?.country?.displayName].filter(Boolean).join(', '),
-        uri: e.uri || ''
+        date: e.dates?.start?.localDate || '',
+        venue: e._embedded?.venues?.[0]?.name || e.name,
+        city: [e._embedded?.venues?.[0]?.city?.name, e._embedded?.venues?.[0]?.country?.name].filter(Boolean).join(', '),
+        url: e.url || ''
       }));
-  } catch (e) {
-    console.warn('Concerts fetch failed:', e);
+  } catch (err) {
+    console.warn('Concerts fetch failed:', err);
     return [];
   }
 }
