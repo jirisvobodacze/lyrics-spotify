@@ -26,13 +26,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; overflow: hidden; }
 
-/* ══ DYNAMIC BG BLUR — only behind right panel ══ */
+/* ══ DYNAMIC BG BLUR — subtle, only behind right panel ══ */
 #bg-blur {
   position: fixed; top: -40px; right: -40px; bottom: -40px;
   width: calc(var(--panel-w) + 80px);
   z-index: 0;
   background-size: cover; background-position: center;
-  filter: blur(50px) saturate(1.3) brightness(.22);
+  filter: blur(60px) saturate(1.1) brightness(.15);
   opacity: 0; transition: opacity 2s ease;
   pointer-events: none;
 }
@@ -152,17 +152,25 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 }
 
 /* Lyric lines */
+:root { --lyr-base: 2rem; --lyr-active: 2.8rem; }
 .lyric-line {
-  font-size: 2rem; font-weight: 500; line-height: 1.25; margin-bottom: 4px;
-  color: var(--text-faint); cursor: default; white-space: pre-wrap;
+  font-size: var(--lyr-base); font-weight: 500; line-height: 1.25; margin-bottom: 4px;
+  color: var(--text-faint); white-space: pre-wrap;
   transition: color .45s ease, transform .45s ease, font-size .38s ease, font-weight .38s ease, opacity .45s ease;
   transform-origin: left center;
 }
 .lyric-line.blank { height: 22px; margin-bottom: 0; }
-.lyric-line.past   { color: #222230; font-size: 1.65rem; font-weight: 400; opacity: .5; }
-.lyric-line.active { color: #ffffff; font-size: 2.8rem; font-weight: 700; transform: translateX(6px); opacity: 1; letter-spacing: -.01em; }
-.lyric-line.next   { color: #4a4a60; font-size: 1.9rem; font-weight: 400; transform: translateX(3px); opacity: .6; }
-.lyric-line.future { color: var(--text-faint); font-size: 1.65rem; font-weight: 300; opacity: .28; }
+.lyric-line.past   { color: #222230; font-size: calc(var(--lyr-base) * .83); font-weight: 400; opacity: .5; }
+.lyric-line.active { color: #ffffff; font-size: var(--lyr-active); font-weight: 700; transform: translateX(6px); opacity: 1; letter-spacing: -.01em; }
+.lyric-line.next   { color: #4a4a60; font-size: calc(var(--lyr-base) * .95); font-weight: 400; transform: translateX(3px); opacity: .6; }
+.lyric-line.future { color: var(--text-faint); font-size: calc(var(--lyr-base) * .83); font-weight: 300; opacity: .28; }
+
+/* Fullscreen larger sizes */
+body.fullscreen .lyric-line { font-size: calc(var(--lyr-base) * 1.3); }
+body.fullscreen .lyric-line.active { font-size: calc(var(--lyr-active) * 1.28); }
+body.fullscreen .lyric-line.past { font-size: calc(var(--lyr-base) * 1.05); }
+body.fullscreen .lyric-line.future { font-size: calc(var(--lyr-base) * 1.05); }
+body.fullscreen .lyric-line.next { font-size: calc(var(--lyr-base) * 1.3); }
 
 .lyrics-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--text-dim); }
 .lyrics-empty .icon { font-size: 3rem; opacity: .08; }
@@ -188,13 +196,100 @@ body.fullscreen .lyrics-topbar { padding-right: 48px; }
 
 /* Controls */
 .controls-block { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.ctrl { background: none; border: none; cursor: pointer; color: var(--text-dim); padding: 7px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: color .15s, background .15s; }
-.ctrl:hover { color: var(--text); background: var(--bg3); }
+.ctrl { background: none; border: none; cursor: pointer; color: var(--text-faint); padding: 7px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: color .15s, background .15s; }
+.ctrl:hover { color: var(--text-dim); background: var(--bg3); }
 .ctrl.on { color: var(--green); }
-.ctrl.play-btn { background: var(--text); color: var(--bg); width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; }
-.ctrl.play-btn:hover { background: #ddd; }
+/* Play button — subtle, blends in, text is the star */
+.ctrl.play-btn {
+  background: var(--bg3); color: var(--text-dim);
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.ctrl.play-btn:hover { background: var(--border); color: var(--text); }
 
-/* Vol + util row */
+/* ══ KARAOKE MODE ══ */
+body.karaoke .lyric-line { transition: none !important; }
+body.karaoke .lyric-line.active {
+  position: relative; overflow: hidden;
+  color: transparent !important;
+  -webkit-text-stroke: 0;
+}
+body.karaoke .lyric-line.active::before {
+  content: attr(data-text);
+  position: absolute; left: 0; top: 0; bottom: 0;
+  white-space: pre-wrap;
+  color: #ffffff;
+  width: var(--kar-pct, 0%);
+  overflow: hidden;
+}
+body.karaoke .lyric-line.active::after {
+  content: attr(data-text);
+  position: absolute; left: 0; top: 0;
+  white-space: pre-wrap;
+  color: var(--text-faint);
+  opacity: .25;
+}
+
+/* ══ LYRIC SEEK ══ */
+.lyric-line:not(.blank) { cursor: pointer; }
+.lyric-line:not(.blank):hover { opacity: .85 !important; }
+
+/* ══ FULLSCREEN — wider lyrics ══ */
+body.fullscreen .col-right { display: none; }
+body.fullscreen .layout { grid-template-columns: 1fr; }
+body.fullscreen .lyrics-topbar { padding-right: 48px; }
+body.fullscreen .lyrics-scroll { padding-left: 80px; padding-right: 80px; }
+
+/* ══ MOOD PLAYLIST POPUP ══ */
+.popup-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.popup-overlay.open { opacity: 1; pointer-events: auto; }
+.popup-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+  width: min(500px, 92vw); max-height: 80vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transform: translateY(16px); transition: transform .25s;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+}
+.popup-overlay.open .popup-box { transform: translateY(0); }
+.popup-hdr {
+  padding: 20px 22px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.popup-title { font-size: .95rem; font-weight: 600; }
+.popup-sub { font-size: .72rem; color: var(--text-dim); margin-top: 2px; }
+.popup-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.2rem; padding: 4px 8px; border-radius: 6px; }
+.popup-close:hover { color: var(--text); background: var(--bg3); }
+.popup-body { flex: 1; overflow-y: auto; padding: 12px 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.popup-track {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 22px; transition: background .12s;
+}
+.popup-track:hover { background: var(--bg3); }
+.popup-track-num { font-family: 'Inconsolata',monospace; font-size: .6rem; color: var(--text-faint); min-width: 18px; text-align: right; }
+.popup-track-art { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; background: var(--bg3); flex-shrink: 0; }
+.popup-track-info { flex: 1; overflow: hidden; }
+.popup-track-name { font-size: .82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.popup-track-artist { font-size: .68rem; color: var(--text-dim); font-weight: 300; }
+.popup-track-match { font-family: 'Inconsolata',monospace; font-size: .58rem; color: var(--green); flex-shrink: 0; }
+.popup-footer {
+  padding: 14px 22px; border-top: 1px solid var(--border); flex-shrink: 0;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.popup-btn {
+  flex: 1; min-width: 80px; padding: 9px 12px;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 7px;
+  color: var(--text-dim); font-family: 'Outfit',sans-serif; font-size: .78rem; font-weight: 500;
+  cursor: pointer; transition: all .2s; text-align: center;
+}
+.popup-btn:hover { border-color: var(--green); color: var(--text); }
+.popup-btn.primary { background: var(--green); color: #000; border-color: var(--green); font-weight: 600; }
+.popup-btn.primary:hover { background: #22e361; }
 .util-row { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .util-row svg { color: var(--text-dim); flex-shrink: 0; }
 input[type=range].vol { -webkit-appearance: none; flex: 1; height: 3px; background: var(--border); border-radius: 2px; cursor: pointer; accent-color: var(--green); }
@@ -292,8 +387,6 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
 
       <!-- BG -->
       <rect width="1440" height="900" fill="#0a0a0c"/>
-      <!-- Right panel glow -->
-      <rect x="1140" y="0" width="300" height="900" fill="url(#panelGlow)" opacity=".6"/>
 
       <!-- ── LEFT: LYRICS AREA ── -->
 
@@ -305,11 +398,22 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
       <text x="102" y="35" font-family="Outfit,sans-serif" font-weight="600" font-size="14" fill="white">Suburban Requiem</text>
       <text x="102" y="52" font-family="Outfit,sans-serif" font-size="11" fill="#7a7a8e">YUNGBLUD · <tspan fill="#555566" opacity=".7">Idols (Complete)</tspan></text>
       <!-- synced badge -->
-      <rect x="1085" y="22" width="72" height="18" rx="9" fill="rgba(29,185,84,.1)" stroke="#1db954" stroke-width=".5" opacity=".8"/>
-      <text x="1121" y="35" font-family="Inconsolata,monospace" font-size="9" fill="#1db954" text-anchor="middle">synced ✓</text>
+      <rect x="1010" y="22" width="72" height="18" rx="9" fill="rgba(29,185,84,.1)" stroke="#1db954" stroke-width=".5" opacity=".8"/>
+      <text x="1046" y="35" font-family="Inconsolata,monospace" font-size="9" fill="#1db954" text-anchor="middle">synced ✓</text>
+      <!-- font size btn -->
+      <rect x="1090" y="20" width="28" height="28" rx="14" fill="rgba(10,10,12,.7)" stroke="#1e1e24" stroke-width=".8"/>
+      <text x="1104" y="36" font-family="monospace" font-size="11" fill="#555566" text-anchor="middle">Aa</text>
+      <!-- mood btn -->
+      <rect x="1124" y="20" width="28" height="28" rx="14" fill="rgba(10,10,12,.7)" stroke="#1e1e24" stroke-width=".8"/>
+      <text x="1138" y="36" font-family="monospace" font-size="12" fill="#555566" text-anchor="middle">▶</text>
+      <!-- like btn -->
+      <rect x="1158" y="20" width="28" height="28" rx="14" fill="rgba(10,10,12,.7)" stroke="#1e1e24" stroke-width=".8"/>
+      <text x="1172" y="36" font-family="monospace" font-size="12" fill="#555566" text-anchor="middle">♡</text>
+      <!-- karaoke btn -->
+      <rect x="1092" y="20" width="28" height="28" rx="14" fill="rgba(10,10,12,.7)" stroke="#1e1e24" stroke-width=".8" display="none"/>
       <!-- fullscreen btn -->
-      <rect x="1166" y="20" width="28" height="28" rx="14" fill="rgba(10,10,12,.7)" stroke="#1e1e24" stroke-width=".8"/>
-      <text x="1180" y="36" font-family="monospace" font-size="12" fill="#555566" text-anchor="middle">⛶</text>
+      <rect x="1192" y="20" width="28" height="28" rx="14" fill="rgba(10,10,12,.7)" stroke="#1e1e24" stroke-width=".8"/>
+      <text x="1206" y="36" font-family="monospace" font-size="11" fill="#555566" text-anchor="middle">⛶</text>
 
       <!-- LYRICS — midpoint of Suburban Requiem -->
       <!-- past lines — very dim, smaller -->
@@ -354,9 +458,9 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
       <!-- Controls -->
       <text x="1176" y="74" font-family="monospace" font-size="16" fill="#3a3a4e">⇄</text>
       <text x="1220" y="76" font-family="monospace" font-size="20" fill="#5a5a6e">⏮</text>
-      <!-- play button circle -->
-      <circle cx="1290" cy="65" r="19" fill="white"/>
-      <polygon points="1285,56 1285,74 1302,65" fill="#0a0a0c"/>
+      <!-- play button circle — subtle dark style -->
+      <circle cx="1290" cy="65" r="19" fill="#18181d" stroke="#2a2a35" stroke-width="1"/>
+      <polygon points="1285,57 1285,73 1301,65" fill="#6a6a7e"/>
       <text x="1347" y="76" font-family="monospace" font-size="20" fill="#5a5a6e">⏭</text>
       <text x="1390" y="74" font-family="monospace" font-size="16" fill="#3a3a4e">↺</text>
       <!-- divider -->
@@ -508,7 +612,26 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
         <div class="topbar-right">
           <span class="badge-pill bpm" id="bpm-badge" style="display:none"></span>
           <span class="badge-pill" id="src-badge"></span>
-          <button class="btn-icon" id="btn-fs" onclick="toggleFullscreen()" title="Fullscreen (F)">⛶</button>
+          <!-- Font size -->
+          <button class="btn-icon" id="btn-font" onclick="cycleFontSize()" title="Velikost textu">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"/></svg>
+          </button>
+          <!-- Mood playlist -->
+          <button class="btn-icon" id="btn-mood" onclick="openMoodPlaylist()" title="Doporučení dle nálady">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+          </button>
+          <!-- Like track -->
+          <button class="btn-icon" id="btn-like" onclick="toggleLike()" title="Přidat do oblíbených (L)">
+            <svg id="like-svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>
+          </button>
+          <!-- Karaoke mode -->
+          <button class="btn-icon" id="btn-kar" onclick="toggleKaraoke()" title="Karaoke režim (K)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a4 4 0 0 1 4 4c0 2.21-1.79 4-4 4S8 9.21 8 7a4 4 0 0 1 4-4zm0 10c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4z"/><circle cx="19" cy="13" r="3" fill="var(--green)" opacity="0"/><path d="M17 16h4v1h-4zm0 2h4v1h-4z" opacity="0"/></svg>
+          </button>
+          <!-- Fullscreen -->
+          <button class="btn-icon" id="btn-fs" onclick="toggleFullscreen()" title="Fullscreen (F)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          </button>
         </div>
       </div>
 
@@ -575,6 +698,21 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
       <div class="queue-list" id="queue-list"></div>
 
     </div>
+  </div>
+</div>
+
+<!-- MOOD PLAYLIST POPUP -->
+<div class="popup-overlay" id="mood-popup" onclick="closeMoodPopup(event)">
+  <div class="popup-box">
+    <div class="popup-hdr">
+      <div>
+        <div class="popup-title" id="mood-popup-title">Doporučení dle nálady</div>
+        <div class="popup-sub" id="mood-popup-sub">Hledám písničky…</div>
+      </div>
+      <button class="popup-close" onclick="closeMoodPopup()">✕</button>
+    </div>
+    <div class="popup-body" id="mood-popup-body"></div>
+    <div class="popup-footer" id="mood-popup-footer"></div>
   </div>
 </div>
 
@@ -851,7 +989,224 @@ let playing=false, posMs=0, durMs=0;
 let pollId=null, tickId=null;
 let currentArtist='', currentTitle='', currentAlbum='', currentYear='';
 let lastActiveIdx=-2, renderedLines=null;
-let isFullscreen=false;
+let isFullscreen=false, isKaraoke=false, isLiked=false;
+let fontSizeIdx=1; // 0=small, 1=medium(default), 2=large
+const FONT_SIZES=[
+  {base:'1.6rem',active:'2.2rem',label:'S'},
+  {base:'2rem',  active:'2.8rem',label:'M'},
+  {base:'2.5rem',active:'3.5rem',label:'L'},
+];
+
+/* ══════════════════════════════════════
+   KARAOKE MODE
+══════════════════════════════════════ */
+let karaokeLineIdx=-1; // index of active line when karaoke started
+let karaokeLineStartMs=0; // posMs when this line started
+let karaokeLineDurMs=0;   // estimated duration of active line
+
+function toggleKaraoke() {
+  isKaraoke=!isKaraoke;
+  document.body.classList.toggle('karaoke',isKaraoke);
+  document.getElementById('btn-kar').classList.toggle('active',isKaraoke);
+  toast(isKaraoke?'Karaoke režim zapnut':'Karaoke režim vypnut');
+}
+
+// Called every 250ms tick — updates karaoke fill percentage
+function updateKaraokeFill() {
+  if(!isKaraoke||!lyrLines) return;
+  const activeEl=document.querySelector('.lyric-line.active');
+  if(!activeEl) return;
+  const idx=getActiveIdx(lyrLines,posMs);
+  // Find next non-blank line to estimate duration
+  let nextMs=durMs;
+  for(let i=idx+1;i<lyrLines.length;i++){
+    if(lyrLines[i].text!==''){nextMs=lyrLines[i].timeMs;break;}
+  }
+  const lineStart=isSynced?(lyrLines[idx]?.timeMs||posMs):posMs;
+  const lineDur=Math.max(500,nextMs-lineStart);
+  const pct=Math.min(100,Math.max(0,(posMs-lineStart)/lineDur*100));
+  activeEl.style.setProperty('--kar-pct',pct+'%');
+}
+
+/* ══════════════════════════════════════
+   FONT SIZE
+══════════════════════════════════════ */
+function cycleFontSize() {
+  fontSizeIdx=(fontSizeIdx+1)%3;
+  applyFontSize();
+  localStorage.setItem('font_size_idx',fontSizeIdx);
+  toast('Velikost textu: '+FONT_SIZES[fontSizeIdx].label);
+}
+function applyFontSize() {
+  const f=FONT_SIZES[fontSizeIdx];
+  document.documentElement.style.setProperty('--lyr-base',f.base);
+  document.documentElement.style.setProperty('--lyr-active',f.active);
+  const btn=document.getElementById('btn-font');
+  if(btn) btn.title=`Velikost textu: ${f.label} (klik pro změnu)`;
+}
+
+/* ══════════════════════════════════════
+   LIKE TRACK (Spotify Saved Tracks)
+══════════════════════════════════════ */
+async function checkLiked(id) {
+  try {
+    const r=await spGet('/me/tracks/contains?ids='+id);
+    isLiked=Array.isArray(r)&&r[0];
+    updateLikeBtn();
+  } catch{}
+}
+async function toggleLike() {
+  if(!trackId) return;
+  const tok=await getTok();
+  if(isLiked) {
+    await fetch('https://api.spotify.com/v1/me/tracks?ids='+trackId,
+      {method:'DELETE',headers:{Authorization:'Bearer '+tok}});
+    isLiked=false;
+    toast('Odebráno z oblíbených');
+  } else {
+    await fetch('https://api.spotify.com/v1/me/tracks',
+      {method:'PUT',headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json'},
+       body:JSON.stringify({ids:[trackId]})});
+    isLiked=true;
+    toast('Přidáno do oblíbených ♥');
+  }
+  updateLikeBtn();
+}
+function updateLikeBtn() {
+  const svg=document.getElementById('like-svg');
+  const btn=document.getElementById('btn-like');
+  if(!svg||!btn) return;
+  if(isLiked) {
+    svg.innerHTML='<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
+    btn.classList.add('active');
+  } else {
+    svg.innerHTML='<path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/>';
+    btn.classList.remove('active');
+  }
+}
+
+/* ══════════════════════════════════════
+   LYRIC SEEK — click on line to seek
+══════════════════════════════════════ */
+function seekToLine(idx) {
+  if(!isSynced||!lyrLines?.[idx]) return;
+  const ms=lyrLines[idx].timeMs;
+  if(ms<0) return;
+  posMs=ms;
+  const tok=getTok().then(t=>{
+    fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${ms}`,
+      {method:'PUT',headers:{Authorization:'Bearer '+t}});
+  });
+  renderLyrics(lyrLines,getActiveIdx(lyrLines,posMs));
+}
+
+/* ══════════════════════════════════════
+   MOOD PLAYLIST — AI recommends tracks
+══════════════════════════════════════ */
+let moodTracks=[]; // [{name,artist,uri,art}]
+
+async function openMoodPlaylist() {
+  const popup=document.getElementById('mood-popup');
+  popup.classList.add('open');
+  document.getElementById('mood-popup-title').textContent='Doporučení dle nálady';
+  document.getElementById('mood-popup-sub').textContent=`Na základě: ${currentTitle} – ${currentArtist}`;
+  document.getElementById('mood-popup-body').innerHTML='<div style="padding:32px;text-align:center;font-family:Inconsolata,monospace;font-size:.7rem;color:var(--text-faint)">Hledám písničky…</div>';
+  document.getElementById('mood-popup-footer').innerHTML='';
+  moodTracks=[];
+
+  const apiKey=getGeminiKey();
+  if(!apiKey) {
+    document.getElementById('mood-popup-body').innerHTML='<div style="padding:32px;text-align:center;font-family:Inconsolata,monospace;font-size:.7rem;color:var(--text-faint)">Nastav Gemini API klíč pro tuto funkci</div>';
+    return;
+  }
+
+  const langNote=aiLang==='CZ'?'Respond in Czech.':'Respond in English.';
+  const prompt=`You are a music expert. The user is listening to "${currentTitle}" by ${currentArtist}${currentAlbum?` (${currentAlbum})`:''}. 
+Recommend 15 songs that match the emotional mood, energy, and sonic character of this track.
+Vary between well-known and lesser-known tracks. Include the original song's genre but also adjacent ones.
+Respond ONLY with valid JSON array, no markdown:
+[{"name":"Track Name","artist":"Artist Name","reason":"1 short sentence why it fits"}]
+${langNote}`;
+
+  try {
+    const res=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.85,maxOutputTokens:1200}})}
+    );
+    const data=await res.json();
+    if(data.error){throw new Error(data.error.message);}
+    const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const tracks=JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    // Search each track on Spotify to get URI + art
+    moodTracks=[];
+    for(const t of tracks.slice(0,15)) {
+      try {
+        const q=encodeURIComponent(`track:${t.name} artist:${t.artist}`);
+        const sr=await spGet(`/search?q=${q}&type=track&limit=1`);
+        const item=sr?.tracks?.items?.[0];
+        if(item) {
+          moodTracks.push({
+            name:item.name, artist:item.artists.map(a=>a.name).join(', '),
+            uri:item.uri, art:item.album?.images?.[0]?.url||'',
+            reason:t.reason, id:item.id
+          });
+        } else {
+          moodTracks.push({name:t.name,artist:t.artist,uri:null,art:'',reason:t.reason,id:null});
+        }
+      } catch{}
+    }
+
+    renderMoodPopup();
+  } catch(e) {
+    document.getElementById('mood-popup-body').innerHTML=`<div style="padding:32px;text-align:center;font-family:Inconsolata,monospace;font-size:.7rem;color:var(--rust)">Chyba: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderMoodPopup() {
+  const body=document.getElementById('mood-popup-body');
+  body.innerHTML=moodTracks.map((t,i)=>`
+    <div class="popup-track">
+      <span class="popup-track-num">${i+1}</span>
+      ${t.art?`<img class="popup-track-art" src="${t.art}" alt="">`:'<div class="popup-track-art"></div>'}
+      <div class="popup-track-info">
+        <div class="popup-track-name">${esc(t.name)}</div>
+        <div class="popup-track-artist">${esc(t.artist)}</div>
+        ${t.reason?`<div style="font-size:.62rem;color:var(--text-faint);margin-top:1px;font-style:italic">${esc(t.reason)}</div>`:''}
+      </div>
+      ${t.uri?`<span class="popup-track-match">✓</span>`:'<span style="font-size:.6rem;color:var(--text-faint)">?</span>'}
+    </div>`).join('');
+
+  const available=moodTracks.filter(t=>t.uri);
+  const footer=document.getElementById('mood-popup-footer');
+  footer.innerHTML=`
+    <button class="popup-btn" onclick="addMoodToQueue(5)">+ Přidat 5</button>
+    <button class="popup-btn" onclick="addMoodToQueue(10)">+ Přidat 10</button>
+    <button class="popup-btn primary" onclick="addMoodToQueue(${available.length})">+ Přidat vše (${available.length})</button>`;
+}
+
+async function addMoodToQueue(count) {
+  const available=moodTracks.filter(t=>t.uri).slice(0,count);
+  if(!available.length){toast('Žádné dostupné písničky',true);return;}
+  const tok=await getTok();
+  let added=0;
+  for(const t of available) {
+    try {
+      await fetch(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(t.uri)}`,
+        {method:'POST',headers:{Authorization:'Bearer '+tok}});
+      added++;
+    } catch{}
+  }
+  closeMoodPopup();
+  toast(`Přidáno ${added} písniček do fronty`);
+  setTimeout(poll,1000);
+}
+
+function closeMoodPopup(e) {
+  if(e&&e.target!==document.getElementById('mood-popup')) return;
+  document.getElementById('mood-popup').classList.remove('open');
+}
 
 /* ══════════════════════════════════════
    ACTIVE LINE
@@ -883,7 +1238,13 @@ function renderLyrics(lines,activeIdx) {
     lines.forEach((l,i)=>{
       const el=document.createElement('div');
       el.className='lyric-line'+(l.text===''?' blank':'');
-      el.dataset.i=i; el.textContent=l.text||''; sc.appendChild(el);
+      el.dataset.i=i;
+      el.textContent=l.text||'';
+      if(l.text) {
+        el.setAttribute('data-text',l.text);
+        el.addEventListener('click',()=>seekToLine(i));
+      }
+      sc.appendChild(el);
     });
   }
   if(activeIdx===lastActiveIdx) return;
@@ -945,7 +1306,21 @@ function toggleFullscreen() {
   isFullscreen=!isFullscreen;
   document.body.classList.toggle('fullscreen',isFullscreen);
   document.getElementById('btn-fs').classList.toggle('active',isFullscreen);
+  // Real OS fullscreen
+  if(isFullscreen) {
+    (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen||function(){}).call(document.documentElement);
+  } else {
+    (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+  }
 }
+// Sync if user presses Escape
+document.addEventListener('fullscreenchange',()=>{
+  if(!document.fullscreenElement&&isFullscreen){
+    isFullscreen=false;
+    document.body.classList.remove('fullscreen');
+    document.getElementById('btn-fs')?.classList.remove('active');
+  }
+});
 
 /* ══════════════════════════════════════
    POLL — every 3s
@@ -1019,6 +1394,10 @@ async function poll() {
       setTimeout(()=>triggerAI(true),1500);
     }
 
+    // Check if track is liked
+    isLiked=false; updateLikeBtn();
+    checkLiked(track.id);
+
   } else if(lyrLines) {
     renderLyrics(lyrLines,getActiveIdx(lyrLines,posMs));
   }
@@ -1040,6 +1419,7 @@ function startTick() {
     posMs=Math.min(posMs+250,durMs);
     updateProgress();
     if(lyrLines) renderLyrics(lyrLines,getActiveIdx(lyrLines,posMs));
+    if(isKaraoke) updateKaraokeFill();
   },250);
 }
 
@@ -1077,6 +1457,8 @@ document.addEventListener('keydown',e=>{
   else if(e.code==='ArrowRight'){e.preventDefault();doNext();}
   else if(e.code==='ArrowLeft'){e.preventDefault();doPrev();}
   else if(e.code==='KeyF'){e.preventDefault();toggleFullscreen();}
+  else if(e.code==='KeyK'){e.preventDefault();toggleKaraoke();}
+  else if(e.code==='KeyL'){e.preventDefault();toggleLike();}
 });
 
 /* ══════════════════════════════════════
@@ -1102,6 +1484,11 @@ async function init() {
   const savedGk=getGeminiKey();
   if(savedGk) document.getElementById('gkey').value=savedGk;
   document.getElementById('btn-lang').textContent=aiLang;
+
+  // Restore font size
+  const savedFont=localStorage.getItem('font_size_idx');
+  if(savedFont!==null) fontSizeIdx=parseInt(savedFont)||1;
+  applyFontSize();
 
   const p=new URLSearchParams(location.search);
   const code=p.get('code'),error=p.get('error');
