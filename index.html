@@ -207,32 +207,13 @@ body.fullscreen .lyrics-topbar { padding-right: 48px; }
 }
 .ctrl.play-btn:hover { background: var(--border); color: var(--text); }
 
-/* ══ KARAOKE MODE ══ */
-body.karaoke .lyric-line { transition: none !important; }
-body.karaoke .lyric-line.active {
-  position: relative; overflow: hidden;
-  color: transparent !important;
-  -webkit-text-stroke: 0;
+/* ══ LYRIC SEEK — subtle hover, default cursor ══ */
+.lyric-line:not(.blank) { cursor: default; }
+.lyric-line:not(.blank):hover {
+  color: rgba(255,255,255,.18) !important;
+  transition: color .15s ease !important;
 }
-body.karaoke .lyric-line.active::before {
-  content: attr(data-text);
-  position: absolute; left: 0; top: 0; bottom: 0;
-  white-space: pre-wrap;
-  color: #ffffff;
-  width: var(--kar-pct, 0%);
-  overflow: hidden;
-}
-body.karaoke .lyric-line.active::after {
-  content: attr(data-text);
-  position: absolute; left: 0; top: 0;
-  white-space: pre-wrap;
-  color: var(--text-faint);
-  opacity: .25;
-}
-
-/* ══ LYRIC SEEK ══ */
-.lyric-line:not(.blank) { cursor: pointer; }
-.lyric-line:not(.blank):hover { opacity: .85 !important; }
+.lyric-line.active:hover { color: #ffffff !important; }
 
 /* ══ FULLSCREEN — wider lyrics ══ */
 body.fullscreen .col-right { display: none; }
@@ -266,6 +247,28 @@ body.fullscreen .lyrics-scroll { padding-left: 80px; padding-right: 80px; }
 .popup-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.2rem; padding: 4px 8px; border-radius: 6px; }
 .popup-close:hover { color: var(--text); background: var(--bg3); }
 .popup-body { flex: 1; overflow-y: auto; padding: 12px 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+/* Loading skeleton for mood popup */
+.popup-loading {
+  display: flex; flex-direction: column; gap: 10px; padding: 16px 22px;
+}
+.popup-skeleton {
+  display: flex; align-items: center; gap: 10px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.popup-skeleton-art {
+  width: 36px; height: 36px; border-radius: 4px;
+  background: var(--bg3); flex-shrink: 0;
+}
+.popup-skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.popup-skeleton-line {
+  height: 8px; border-radius: 4px; background: var(--bg3);
+}
+.popup-skeleton-line.short { width: 55%; }
+@keyframes skeleton-pulse {
+  0%,100% { opacity: .4; }
+  50%      { opacity: .9; }
+}
 .popup-track {
   display: flex; align-items: center; gap: 10px;
   padding: 7px 22px; transition: background .12s;
@@ -333,28 +336,27 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
 .concert-city { font-size: .65rem; color: var(--text-dim); font-weight: 300; }
 .ai-empty { font-size: .68rem; color: var(--text-faint); font-style: italic; font-family: 'Inconsolata',monospace; padding: 6px 0; }
 
-/* Queue */
-.queue-hdr { padding: 12px 16px 8px; font-family: 'Inconsolata',monospace; font-size: .58rem; letter-spacing: .2em; color: var(--text-dim); text-transform: uppercase; flex-shrink: 0; }
+/* Queue — very low contrast, background element */
+.queue-hdr { padding: 12px 16px 8px; font-family: 'Inconsolata',monospace; font-size: .56rem; letter-spacing: .2em; color: #2a2a35; text-transform: uppercase; flex-shrink: 0; }
 .queue-list { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .queue-list::-webkit-scrollbar { width: 3px; }
 .queue-list::-webkit-scrollbar-thumb { background: var(--border); }
-.q-item { display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-bottom: 1px solid rgba(30,30,36,.6); transition: background .12s; }
-.q-item:hover { background: var(--bg3); }
-.q-num { font-family: 'Inconsolata',monospace; font-size: .55rem; color: var(--text-faint); min-width: 14px; text-align: right; flex-shrink: 0; }
-.q-art { width: 32px; height: 32px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: var(--bg3); }
+.q-item { display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-bottom: 1px solid rgba(20,20,26,.8); transition: background .12s; }
+.q-item:hover { background: rgba(255,255,255,.02); }
+.q-num { font-family: 'Inconsolata',monospace; font-size: .55rem; color: #1e1e28; min-width: 14px; text-align: right; flex-shrink: 0; }
+.q-art { width: 32px; height: 32px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: var(--bg3); opacity: .55; }
 .q-info { overflow: hidden; flex: 1; }
-.q-title { font-size: .75rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.q-artist { font-size: .65rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 300; }
-.q-dur { font-family: 'Inconsolata',monospace; font-size: .58rem; color: var(--text-dim); flex-shrink: 0; }
-
+.q-title { font-size: .73rem; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #2e2e3e; }
+.q-artist { font-size: .62rem; color: #222230; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 300; }
+.q-dur { font-family: 'Inconsolata',monospace; font-size: .56rem; color: #1e1e28; flex-shrink: 0; }
+/* Next track slightly more visible */
+.q-item.now-playing { background: rgba(29,185,84,.04); }
+.q-item.now-playing .q-title { color: rgba(29,185,84,.5); }
+.q-item.now-playing .q-num { color: rgba(29,185,84,.4); }
 /* Lyrics fade transition between tracks */
 .lyrics-scroll { transition: transform 1s cubic-bezier(.16,.84,.44,1), opacity .3s ease; }
 .lyrics-scroll.fading { opacity: 0; }
 
-/* Queue currently playing item */
-.q-item.now-playing { background: rgba(29,185,84,.06); }
-.q-item.now-playing .q-title { color: var(--green); }
-.q-item.now-playing .q-num { color: var(--green); }
 #toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(12px); background: var(--bg3); color: var(--text); font-family: 'Inconsolata',monospace; font-size: .72rem; padding: 8px 18px; border: 1px solid var(--border); border-radius: 50px; opacity: 0; transition: all .3s; pointer-events: none; z-index: 9999; white-space: nowrap; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast.err { border-color: var(--rust); color: var(--rust); }
@@ -378,11 +380,6 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
           <stop offset="72%" stop-color="#0a0a0c" stop-opacity="0"/>
           <stop offset="100%" stop-color="#0a0a0c" stop-opacity="1"/>
         </linearGradient>
-        <!-- Subtle right-panel blur glow from album art -->
-        <radialGradient id="panelGlow" cx="100%" cy="60%" r="60%">
-          <stop offset="0%" stop-color="#2a1a08" stop-opacity=".9"/>
-          <stop offset="100%" stop-color="#0a0a0c" stop-opacity="0"/>
-        </radialGradient>
       </defs>
 
       <!-- BG -->
@@ -397,9 +394,9 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
       <!-- Track name + artist in top bar -->
       <text x="102" y="35" font-family="Outfit,sans-serif" font-weight="600" font-size="14" fill="white">Suburban Requiem</text>
       <text x="102" y="52" font-family="Outfit,sans-serif" font-size="11" fill="#7a7a8e">YUNGBLUD · <tspan fill="#555566" opacity=".7">Idols (Complete)</tspan></text>
-      <!-- synced badge -->
-      <rect x="1010" y="22" width="72" height="18" rx="9" fill="rgba(29,185,84,.1)" stroke="#1db954" stroke-width=".5" opacity=".8"/>
-      <text x="1046" y="35" font-family="Inconsolata,monospace" font-size="9" fill="#1db954" text-anchor="middle">synced ✓</text>
+      <!-- album/year badge -->
+      <rect x="990" y="22" width="112" height="18" rx="9" fill="rgba(30,30,36,.8)" stroke="#1e1e24" stroke-width=".5"/>
+      <text x="1046" y="35" font-family="Inconsolata,monospace" font-size="9" fill="#3a3a4e" text-anchor="middle">Idols (Complete) · 2026</text>
       <!-- font size btn -->
       <rect x="1090" y="20" width="28" height="28" rx="14" fill="rgba(10,10,12,.7)" stroke="#1e1e24" stroke-width=".8"/>
       <text x="1104" y="36" font-family="monospace" font-size="11" fill="#555566" text-anchor="middle">Aa</text>
@@ -611,7 +608,8 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
         </div>
         <div class="topbar-right">
           <span class="badge-pill bpm" id="bpm-badge" style="display:none"></span>
-          <span class="badge-pill" id="src-badge"></span>
+          <span class="badge-pill" id="src-badge" style="display:none"></span>
+          <span class="badge-pill" id="album-badge"></span>
           <!-- Font size -->
           <button class="btn-icon" id="btn-font" onclick="cycleFontSize()" title="Velikost textu">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9 4v3h5v12h3V7h5V4H9zm-6 8h3v7h3v-7h3V9H3v3z"/></svg>
@@ -624,10 +622,7 @@ input[type=range].vol::-webkit-slider-thumb { -webkit-appearance: none; width: 1
           <button class="btn-icon" id="btn-like" onclick="toggleLike()" title="Přidat do oblíbených (L)">
             <svg id="like-svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>
           </button>
-          <!-- Karaoke mode -->
-          <button class="btn-icon" id="btn-kar" onclick="toggleKaraoke()" title="Karaoke režim (K)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a4 4 0 0 1 4 4c0 2.21-1.79 4-4 4S8 9.21 8 7a4 4 0 0 1 4-4zm0 10c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4z"/><circle cx="19" cy="13" r="3" fill="var(--green)" opacity="0"/><path d="M17 16h4v1h-4zm0 2h4v1h-4z" opacity="0"/></svg>
-          </button>
+          <!-- Karaoke removed -->
           <!-- Fullscreen -->
           <button class="btn-icon" id="btn-fs" onclick="toggleFullscreen()" title="Fullscreen (F)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
@@ -989,44 +984,13 @@ let playing=false, posMs=0, durMs=0;
 let pollId=null, tickId=null;
 let currentArtist='', currentTitle='', currentAlbum='', currentYear='';
 let lastActiveIdx=-2, renderedLines=null;
-let isFullscreen=false, isKaraoke=false, isLiked=false;
-let fontSizeIdx=1; // 0=small, 1=medium(default), 2=large
+let isFullscreen=false, isLiked=false;
+let fontSizeIdx=1;
 const FONT_SIZES=[
   {base:'1.6rem',active:'2.2rem',label:'S'},
   {base:'2rem',  active:'2.8rem',label:'M'},
   {base:'2.5rem',active:'3.5rem',label:'L'},
 ];
-
-/* ══════════════════════════════════════
-   KARAOKE MODE
-══════════════════════════════════════ */
-let karaokeLineIdx=-1; // index of active line when karaoke started
-let karaokeLineStartMs=0; // posMs when this line started
-let karaokeLineDurMs=0;   // estimated duration of active line
-
-function toggleKaraoke() {
-  isKaraoke=!isKaraoke;
-  document.body.classList.toggle('karaoke',isKaraoke);
-  document.getElementById('btn-kar').classList.toggle('active',isKaraoke);
-  toast(isKaraoke?'Karaoke režim zapnut':'Karaoke režim vypnut');
-}
-
-// Called every 250ms tick — updates karaoke fill percentage
-function updateKaraokeFill() {
-  if(!isKaraoke||!lyrLines) return;
-  const activeEl=document.querySelector('.lyric-line.active');
-  if(!activeEl) return;
-  const idx=getActiveIdx(lyrLines,posMs);
-  // Find next non-blank line to estimate duration
-  let nextMs=durMs;
-  for(let i=idx+1;i<lyrLines.length;i++){
-    if(lyrLines[i].text!==''){nextMs=lyrLines[i].timeMs;break;}
-  }
-  const lineStart=isSynced?(lyrLines[idx]?.timeMs||posMs):posMs;
-  const lineDur=Math.max(500,nextMs-lineStart);
-  const pct=Math.min(100,Math.max(0,(posMs-lineStart)/lineDur*100));
-  activeEl.style.setProperty('--kar-pct',pct+'%');
-}
 
 /* ══════════════════════════════════════
    FONT SIZE
@@ -1036,6 +1000,9 @@ function cycleFontSize() {
   applyFontSize();
   localStorage.setItem('font_size_idx',fontSizeIdx);
   toast('Velikost textu: '+FONT_SIZES[fontSizeIdx].label);
+  // Force full re-render so sizes update immediately
+  renderedLines=null; lastActiveIdx=-2;
+  if(lyrLines) renderLyrics(lyrLines,getActiveIdx(lyrLines,posMs));
 }
 function applyFontSize() {
   const f=FONT_SIZES[fontSizeIdx];
@@ -1110,7 +1077,16 @@ async function openMoodPlaylist() {
   popup.classList.add('open');
   document.getElementById('mood-popup-title').textContent='Doporučení dle nálady';
   document.getElementById('mood-popup-sub').textContent=`Na základě: ${currentTitle} – ${currentArtist}`;
-  document.getElementById('mood-popup-body').innerHTML='<div style="padding:32px;text-align:center;font-family:Inconsolata,monospace;font-size:.7rem;color:var(--text-faint)">Hledám písničky…</div>';
+  document.getElementById('mood-popup-body').innerHTML=`
+    <div class="popup-loading">${Array(8).fill(0).map((_,i)=>`
+      <div class="popup-skeleton" style="animation-delay:${i*0.08}s">
+        <div class="popup-skeleton-art"></div>
+        <div class="popup-skeleton-lines">
+          <div class="popup-skeleton-line" style="width:${60+Math.random()*30|0}%"></div>
+          <div class="popup-skeleton-line short"></div>
+        </div>
+      </div>`).join('')}
+    </div>`;
   document.getElementById('mood-popup-footer').innerHTML='';
   moodTracks=[];
 
@@ -1367,6 +1343,14 @@ async function poll() {
 
     document.getElementById('bpm-badge').style.display='none';
 
+    // Album/year badge in topbar
+    const albumBadge=document.getElementById('album-badge');
+    if(albumBadge) {
+      const badgeText=[currentAlbum,currentYear].filter(Boolean).join(' · ');
+      albumBadge.textContent=badgeText;
+      albumBadge.style.display=badgeText?'':'none';
+    }
+
     // Fade out old lyrics, then load new ones
     const sc=document.getElementById('lyr-sc');
     sc.classList.add('fading');
@@ -1419,7 +1403,6 @@ function startTick() {
     posMs=Math.min(posMs+250,durMs);
     updateProgress();
     if(lyrLines) renderLyrics(lyrLines,getActiveIdx(lyrLines,posMs));
-    if(isKaraoke) updateKaraokeFill();
   },250);
 }
 
@@ -1457,7 +1440,6 @@ document.addEventListener('keydown',e=>{
   else if(e.code==='ArrowRight'){e.preventDefault();doNext();}
   else if(e.code==='ArrowLeft'){e.preventDefault();doPrev();}
   else if(e.code==='KeyF'){e.preventDefault();toggleFullscreen();}
-  else if(e.code==='KeyK'){e.preventDefault();toggleKaraoke();}
   else if(e.code==='KeyL'){e.preventDefault();toggleLike();}
 });
 
